@@ -5,15 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 interface IERC20 {
-    function transfer(address recipient, uint256 amount)
-        external
-        returns (bool);
-
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (uint256);
 }
 
 contract NFTContract is ERC721URIStorage, Ownable {
@@ -37,18 +30,26 @@ contract NFTContract is ERC721URIStorage, Ownable {
         uint256 deposit;
         uint256 withdraw;
     }
-    struct AllNfts{
-     NftDetails[] nfts;
+    struct AllNfts {
+        NftDetails[] nfts;
     }
     AllNfts allNfts;
     mapping(address => uint256) public buyersDetail;
     mapping(address => Investor) public investorsDetail;
     mapping(uint256 => uint256) public idToIndex;
 
-    function mint(string memory _tokenURI) external onlyOwner returns(uint){
+    event NftMinted(uint256 tokenId, address indexed owner, string tokenURI);
+    event CollateralDeposited(uint256 tokenId, address indexed depositor, uint256 pbmcAmount, uint256 nftPrice);
+    event TokenSentByBuyer(address indexed buyer, uint256 pbmcAmount);
+    event InvestorDeposited(uint256 tokenId, address indexed investor);
+    event InvestorWithdrawn(address indexed investor, uint256 pbmcAmount);
+    event NftBurned(uint256 tokenId);
+
+    function mint(string memory _tokenURI) external onlyOwner returns (uint) {
         tokenId++;
         _mint(msg.sender, tokenId);
         _setTokenURI(tokenId, _tokenURI);
+        emit NftMinted(tokenId, msg.sender, _tokenURI);
         return tokenId;
     }
 
@@ -56,32 +57,35 @@ contract NFTContract is ERC721URIStorage, Ownable {
         address seller,
         uint256 _tokenId,
         uint256 pbmcAmount,
-        uint256 NFTPrice
+        uint256 nftPrice
     ) external {
         require(_tokenId <= tokenId && _tokenId != 0, "invalid token id");
-        require(NFTPrice > 0, "nft value can not be zero");
-        require(pbmcAmount > 0, "pbmc value can not be zero");
+        require(nftPrice > 0, "nft value cannot be zero");
+        require(pbmcAmount > 0, "pbmc value cannot be zero");
         require(idToIndex[_tokenId] == 0, "nft is already deposited");
         NftDetails memory nftDetails = NftDetails(
             msg.sender,
             seller,
-            NFTPrice,
+            nftPrice,
             pbmcAmount,
             false,
-            false );
+            false
+        );
         allNfts.nfts.push(nftDetails);
-        uint256 index = allNfts.nfts.length -1;
-        idToIndex[_tokenId] = index ;
+        uint256 index = allNfts.nfts.length - 1;
+        idToIndex[_tokenId] = index;
         token.transferFrom(msg.sender, address(this), pbmcAmount);
+        emit CollateralDeposited(_tokenId, msg.sender, pbmcAmount, nftPrice);
     }
 
     function sendTokenByBuyer(uint256 pbmcAmount) external {
         token.transferFrom(msg.sender, address(this), pbmcAmount);
         buyersDetail[msg.sender] += pbmcAmount;
+        emit TokenSentByBuyer(msg.sender, pbmcAmount);
     }
 
     function investorDeposit(uint256 _tokenId) external {
-        require(_tokenId <= tokenId && _tokenId != 0, "invalid token id");
+        require(_tokenId<= tokenId && _tokenId != 0, "invalid token id");
         uint256 index = idToIndex[_tokenId];
         NftDetails storage nftDetails = allNfts.nfts[index];
         require(nftDetails.isSold == false, "nft is already sold");
@@ -89,6 +93,7 @@ contract NFTContract is ERC721URIStorage, Ownable {
         token.transferFrom(msg.sender, address(this), nftDetails.price);
         nftDetails.owner = msg.sender;
         nftDetails.isSold = true;
+        emit InvestorDeposited(_tokenId, msg.sender);
     }
 
     function investorWithdraw(uint256 pbmcAmount, address _investorAddress)
@@ -97,6 +102,7 @@ contract NFTContract is ERC721URIStorage, Ownable {
     {
         token.transfer(_investorAddress, pbmcAmount);
         investorsDetail[_investorAddress].withdraw += pbmcAmount;
+        emit InvestorWithdrawn(_investorAddress, pbmcAmount);
     }
 
     function burnNft(uint256 _tokenId) external onlyOwner {
@@ -105,9 +111,10 @@ contract NFTContract is ERC721URIStorage, Ownable {
         // require(nftDetails.isSold == false, "nft is already sold");
         _burn(_tokenId);
         allNfts.nfts[index].isBurn = true;
+        emit NftBurned(_tokenId);
     }
-    function getAllNfts() external view returns(AllNfts memory) {
+
+    function getAllNfts() external view returns (AllNfts memory) {
         return allNfts;
     }
-    
 }
