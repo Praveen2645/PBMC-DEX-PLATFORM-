@@ -1,8 +1,7 @@
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/Math.sol";
 
 library SafeMath {
@@ -20,7 +19,7 @@ library SafeMath {
 }
 
 
-contract Liquidity {
+contract Liquidity is Ownable{
     uint256 public reserve1;
     uint256 public reserve2;
     IERC20 public PBMC;
@@ -60,7 +59,7 @@ contract Liquidity {
 
     constructor() {}
 
-    function setAddresses(address _pbmc, address _WBTC) public {
+    function setAddresses(address _pbmc, address _WBTC) external onlyOwner{
         PBMC = IERC20(_pbmc);
         WBTC = IERC20(_WBTC);
     }
