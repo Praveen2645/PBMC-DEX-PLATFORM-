@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 interface IERC20 {
     function transferFrom(
         address sender,
@@ -45,7 +45,7 @@ library SafeMath {
     }
 }
 
-contract EthPBMCPool {
+contract EthPBMCPool is Ownable{
     uint256 public totalLiquidity;
     IERC20 public PBMC;
     address public WETH;
@@ -73,7 +73,7 @@ event LiquidityRemoved(
 
     constructor() {}
 
-    function setAddress(address _pbmc, address _WETH) external {
+    function setAddress(address _pbmc, address _WETH) external onlyOwner {
         PBMC = IERC20(_pbmc);
         WETH = _WETH;
     }
@@ -331,5 +331,3 @@ event LiquidityRemoved(
         z = x < y ? x : y;
     }
 }
-
-
