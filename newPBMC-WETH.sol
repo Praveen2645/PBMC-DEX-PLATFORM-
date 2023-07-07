@@ -55,8 +55,7 @@ contract EthPBMCPool {
   event LiquidityAdded(
     address indexed provider,
     uint256 amountPBMC,
-    uint256 amountETH,
-    uint256 liquidity
+    uint256 amountETH
 );
 
 event LiquidityRemoved(
@@ -140,8 +139,7 @@ event LiquidityRemoved(
              emit LiquidityAdded(
         msg.sender,
         amountToken,
-        amountETH,
-        liquidity
+        amountETH
     );
 
         }
