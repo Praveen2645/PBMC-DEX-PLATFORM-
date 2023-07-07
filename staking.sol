@@ -141,7 +141,7 @@ contract StakingContract is Ownable, ReentrancyGuard, Pausable {
     {
         uint256 index = stakeholderToIndex[msg.sender];
         Stakeholder storage stakeholder = stakeholders[index];
-        uint256 secondInMonth = 60;
+        uint256 secondInMonth = 60*60*24*30;
         User storage user;
         if (month == 3) {
             user = stakeholder.userThreeMonthPlans[id];
